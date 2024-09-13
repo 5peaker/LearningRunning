@@ -109,7 +109,7 @@ class NeuralNetworkViz(QtWidgets.QWidget):
                     # 현재 부정적 영향을 주는 노드는 붉은색으로 표시
                     else:
                         painter.setPen(QtGui.QPen(Qt.red))
-                    # 걱 노드 위치 체크
+                    # 각각의 노드 위치 체크
                     start = self.neuron_locations[(l-1, prev_node)]
                     end = self.neuron_locations[(l, curr_node)]
                     # Offset 간의 연결 표시

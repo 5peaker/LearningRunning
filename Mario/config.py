@@ -2,22 +2,20 @@ import configparser
 import os
 from typing import Any, Dict
 
-
-# A mapping from parameters name -> final type
 _params = {
-    # Graphics Params
+    # 그래픽 출력 패러미터
     'Graphics': {
         'tile_size': (tuple, float),
         'neuron_radius': float,
     },
 
-    # Statistics Params
+    # 통계 저장용 패러미터
     'Statistics': {
         'save_best_individual_from_generation': str,
         'save_population_stats': str,
     },
 
-    # NeuralNetwork Params
+    # 신경망 정의용 패러미터
     'NeuralNetwork': {
         'input_dims': (tuple, int),
         'hidden_layer_architecture': (tuple, int),
@@ -26,12 +24,12 @@ _params = {
         'encode_row': bool,
     },
 
-    # Genetic Algorithm
+    # 유전 알고리즘
     'GeneticAlgorithm': {
         'fitness_func': type(lambda : None)
     },
 
-    # Crossover Params
+    # 크로스오버 알고리즘
     'Crossover': {
         'probability_sbx': float,
         'sbx_eta': float,
@@ -39,14 +37,14 @@ _params = {
         'tournament_size': int,
     },
 
-    # Mutation Params
+    # 변이 결정 관련 패러미터
     'Mutation': {
         'mutation_rate': float,
         'mutation_rate_type': str,
         'gaussian_mutation_scale': float,
     },
 
-    # Selection Params
+    # 선택 결정 관련 패러미터
     'Selection': {
         'num_parents': int,
         'num_offspring': int,
@@ -54,7 +52,7 @@ _params = {
         'lifespan': float
     },
 
-    # Misc Params
+    # 그 외 
     'Misc': {
         'level': str,
         'allow_additional_time_for_flagpole': bool
@@ -64,10 +62,10 @@ _params = {
 class DotNotation(object):
     def __init__(self, d: Dict[Any, Any]):
         for k in d:
-            # If the key is another dictionary, keep going
+            # key가 다른 딕셔너리로 지정되어 있을 경우 그냥 속행한다 
             if isinstance(d[k], dict):
                 self.__dict__[k] = DotNotation(d[k])
-            # If it's a list or tuple then check to see if any element is a dictionary
+            # 리스트나 튜플로 지정된 경우 내부에 딕셔너리가 있는지 탐색한다
             elif isinstance(d[k], (list, tuple)):
                 l = []
                 for v in d[k]:
@@ -89,7 +87,6 @@ class DotNotation(object):
     def __repr__(self) -> str:
         return str(self)
 
-
 class Config(object):
     def __init__(self,
                  filename: str
@@ -97,7 +94,7 @@ class Config(object):
         self.filename = filename
         
         if not os.path.isfile(self.filename):
-            raise Exception('No file found named "{}"'.format(self.filename))
+            raise Exception('파일이 존재하지 않습니다: "{}"'.format(self.filename))
 
         with open(self.filename) as f:
             self._config_text_file = f.read()
@@ -110,7 +107,6 @@ class Config(object):
         self._set_dict_types()
         dot_notation = DotNotation(self._config_dict)
         self.__dict__.update(dot_notation.__dict__)
-
 
     def _create_dict_from_config(self) -> None:
         d = {}
@@ -127,34 +123,33 @@ class Config(object):
                 try:
                     _type = _params[section][k]
                 except:
-                    raise Exception('No value "{}" found for section "{}". Please set this in _params'.format(k, section))
-                # Normally _type will be int, str, float or some type of built-in type.
-                # If _type is an instance of a tuple, then we need to split the data
+                    raise Exception('값: "{}" 이 섹션: "{}" 에 대하여 존재하지 않습니다. _params에서 설정해 주십시오.'.format(k, section))\
+                # 기본적으로 _type은 int, str, float를 비롯한 내장 타입 중 하나를 가진다 (튜플일 경우 쪼개야 함)
                 if isinstance(_type, tuple):
                     if len(_type) == 2:
                         cast = _type[1]
-                        v = v.replace('(', '').replace(')', '')  # Remove any parens that might be present 
+                        v = v.replace('(', '').replace(')', '')  # 괄호 제거
                         self._config_dict[section][k] = tuple(cast(val) for val in v.split(','))
                     else:
-                        raise Exception('Expected a 2 tuple value describing that it is to be parse as a tuple and the type to cast it as')
+                        raise Exception('구문 분석 및 캐스팅 유형 확인을 위해 튜플 인자 두(2) 개가 필요합니다.')
                 elif 'lambda' in v:
                     try:
                         self._config_dict[section][k] = eval(v)
                     except:
                         pass
-                # Is it a bool?
+                # Boolean인지 체크
                 elif _type == bool:
                     self._config_dict[section][k] = _type(eval(v))
-                # Otherwise parse normally
+                # 그 외의 경우 정상적으로 정리한다
                 else:
                     self._config_dict[section][k] = _type(v)
 
     def _verify_sections(self) -> None:
-        # Validate sections
+        # 검증
         for section in self._config.sections():
-            # Make sure the section is allowed
+            # 섹션에서 작업이 허용되어 있는지 체크
             if section not in _params:
-                raise Exception('Section "{}" has no parameters allowed. Please remove this section and run again.'.format(section))
+                raise Exception('현재 섹션 "{}" 에 허용된 패러미터가 없습니다. 이 문제를 해결하고 다시 동작시켜 주십시오.'.format(section))
 
     def _get_reference_from_dict(self, reference: str) -> Any:
         path = reference.split('.')

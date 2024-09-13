@@ -1,5 +1,12 @@
-numpy
-pyqt5
-pillow
-gym
-gym-retro
+cloudpickle==3.0.0
+gym==0.25.2
+gym-notices==0.0.8
+gym-retro==0.8.0
+importlib_metadata==8.4.0
+numpy==1.24.4
+pillow==10.4.0
+pyglet==1.5.29
+PyQt5==5.15.11
+PyQt5-Qt5==5.15.2
+PyQt5_sip==12.15.0
+zipp==3.20.1

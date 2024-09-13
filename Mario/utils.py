@@ -2,11 +2,8 @@ from collections import namedtuple
 import numpy as np
 from enum import Enum, unique
 
-
-
-
-
 @unique
+# 마리오가 맵 상에서 만나게 될 에너미들
 class EnemyType(Enum):
     Green_Koopa1 = 0x00
     Red_Koopa1   = 0x01
@@ -36,6 +33,7 @@ class EnemyType(Enum):
         return value in set(item.value for item in cls)
 
 @unique
+# 마리오가 맵 상에서 마주할 수 있는 개체들 (동전, 파이프, 벽돌 등)
 class StaticTileType(Enum):
     Empty = 0x00
     Fake = 0x01
@@ -58,6 +56,7 @@ class StaticTileType(Enum):
         return value in set(item.value for item in cls)
 
 @unique
+# 맵 상에서 움직이는 개체들 (마리오 본인, 리프트 등)
 class DynamicTileType(Enum):
     Mario = 0xAA
 
@@ -85,20 +84,20 @@ class DynamicTileType(Enum):
         return value in set(item.value for item in cls)
 
 class ColorMap(Enum):
-    Empty = (255, 255, 255)   # White
-    Ground = (128, 43, 0)     # Brown
+    Empty = (255, 255, 255)   # 하얀색
+    Ground = (128, 43, 0)     # 갈색
     Fake = (128, 43, 0)
     Mario = (0, 0, 255)
     Goomba = (255, 0, 20)
-    Top_Pipe1 = (0, 15, 21)  # Dark Green
-    Top_Pipe2 = (0, 15, 21)  # Dark Green
-    Bottom_Pipe1 = (5, 179, 34)  # Light Green
-    Bottom_Pipe2 = (5, 179, 34)  # Light Green
-    Coin_Block1 = (219, 202, 18)  # Gold
-    Coin_Block2 = (219, 202, 18)  # Gold
-    Breakable_Block = (79, 70, 25)  # Brownish
+    Top_Pipe1 = (0, 15, 21)  # 검은 녹색
+    Top_Pipe2 = (0, 15, 21)  # 검은 녹색
+    Bottom_Pipe1 = (5, 179, 34)  # 밝은 녹색
+    Bottom_Pipe2 = (5, 179, 34)  # 밝은 녹색
+    Coin_Block1 = (219, 202, 18)  # 금색
+    Coin_Block2 = (219, 202, 18)  # 금색
+    Breakable_Block = (79, 70, 25)  # 갈색 
 
-    Generic_Enemy = (255, 0, 20)  # Red
+    Generic_Enemy = (255, 0, 20)  # 붉은색
     Generic_Static_Tile = (128, 43, 0) 
     Generic_Dynamic_Tile = (79, 70, 25)
 
@@ -111,19 +110,15 @@ class Tile(object):
         self.type = type
 
 class Enemy(object):
+    # 위 에너미들이 맵에서 돌아다니도록 정의
     def __init__(self, enemy_id: int, location: Point, tile_location: Point):
         enemy_type = EnemyType(enemy_id)
         self.type = EnemyType(enemy_id)
         self.location = location
         self.tile_location = tile_location
 
-
-
-
-
 class SMB(object):
-    # SMB can only load 5 enemies to the screen at a time.
-    # Because of that we only need to check 5 enemy locations
+    # 스크린은 한 번에 다섯 개의 에너미 개체만 로드할 수 있습니다. (그 이상은 필요하지 않습니다)
     MAX_NUM_ENEMIES = 5
     PAGE_SIZE = 256
     NUM_BLOCKS = 8
@@ -139,12 +134,10 @@ class SMB(object):
     xbins = list(range(16, resolution.width, 16))
     ybins = list(range(16, resolution.height, 16))
 
-
     @unique
     class RAMLocations(Enum):
-        # Since the max number of enemies on the screen is 5, the addresses for enemies are
-        # the starting address and span a total of 5 bytes. This means Enemy_Drawn + 0 is the
-        # whether or not enemy 0 is drawn, Enemy_Drawn + 1 is enemy 1, etc. etc.
+        # 스크린은 한 번에 다섯 개의 에너미까지만 표시될 수 있기 때문에, RAM에서 에너미의 주소는 최대 5바이트로 족함
+        # Enemy_Drawn+0은 에너미 0의 존재여부를 판별하고, +1은 에너미 1을 판별하고, +2는 에너미 2를... 
         Enemy_Drawn = 0x0F
         Enemy_Type = 0x16
         Enemy_X_Position_In_Level = 0x6E
@@ -163,32 +156,32 @@ class SMB(object):
 
     @classmethod
     def get_enemy_locations(cls, ram: np.ndarray):
-        # We only care about enemies that are drawn. Others may?? exist
-        # in memory, but if they aren't on the screen, they can't hurt us.
+        # 플레이어(마리오)가 신경써야 할 것은 스크린 내에 표시된 에너미로 족하다. 나머지는 (아마도) 메모리 안에 존재한다. 
+        # 그러나 메모리에 있고 스크린에 없다면, 에너미는 마리오에게 위해를 가하지 못함. <당연>
         # enemies = [None for _ in range(cls.MAX_NUM_ENEMIES)]
         enemies = []
 
         for enemy_num in range(cls.MAX_NUM_ENEMIES):
             enemy = ram[cls.RAMLocations.Enemy_Drawn.value + enemy_num]
-            # Is there an enemy? 1/0
+            # 에너미가 존재하는가? 
             if enemy:
-                # Get the enemy X location.
+                # 에너미 X의 위치를 판별
                 x_pos_level = ram[cls.RAMLocations.Enemy_X_Position_In_Level.value + enemy_num]
                 x_pos_screen = ram[cls.RAMLocations.Enemy_X_Position_On_Screen.value + enemy_num]
                 enemy_loc_x = (x_pos_level * 0x100) + x_pos_screen #- ram[0x71c]
-                # print(ram[0x71c])
                 # enemy_loc_x = ram[cls.RAMLocations.Enemy_X_Position_Screen_Offset.value + enemy_num]
-                # Get the enemy Y location.
+                
+                # 에너미 Y의 위치를 판별
                 enemy_loc_y = ram[cls.RAMLocations.Enemy_Y_Position_On_Screen.value + enemy_num]
-                # Set location
+                # 위치 설정
                 location = Point(enemy_loc_x, enemy_loc_y)
                 ybin = np.digitize(enemy_loc_y, cls.ybins)
                 xbin = np.digitize(enemy_loc_x, cls.xbins)
                 tile_location = Point(xbin, ybin)
 
-                # Grab the id
+                # 에너미 ID 잡아오기 
                 enemy_id = ram[cls.RAMLocations.Enemy_Type.value + enemy_num]
-                # Create enemy-
+                # 에너미 개체 생성
                 e = Enemy(0x6, location, tile_location)
 
                 enemies.append(e)
@@ -196,12 +189,14 @@ class SMB(object):
         return enemies
 
     @classmethod
+    # 각 레벨(스테이지)별로 맵이 다르고 구조가 다르다 
     def get_mario_location_in_level(cls, ram: np.ndarray) -> Point:
         mario_x = ram[cls.RAMLocations.Player_X_Postion_In_Level.value] * 256 + ram[cls.RAMLocations.Player_X_Position_On_Screen.value]
         mario_y = ram[cls.RAMLocations.Player_Y_Position_Screen_Offset.value]
         return Point(mario_x, mario_y)
 
     @classmethod
+    # 코인을 얻거나, 에너미를 격파하면 점수 획득 가능
     def get_mario_score(cls, ram: np.ndarray) -> int:
         multipllier = 10
         score = 0
@@ -222,12 +217,12 @@ class SMB(object):
         x = mario.x + delta_x
         y = mario.y + delta_y + cls.sprite.height
 
-        # Tile locations have two pages. Determine which page we are in
+        # 마리오가 어떤 페이지에 있는지 판별
         page = (x // 256) % 2
-        # Figure out where in the page we are
+        # 마리오가 페이지의 어디에 있는지 판별
         sub_page_x = (x % 256) // 16
-        sub_page_y = (y - 32) // 16  # The PPU is not part of the world, coins, etc (status bar at top)
-        if sub_page_y not in range(13):# or sub_page_x not in range(16):
+        sub_page_y = (y - 32) // 16  # PPU(스테이터스 바 등)는 게임 내 세계의 일부가 아니다
+        if sub_page_y not in range(13): # or sub_page_x not in range(16):
             return StaticTileType.Empty.value
 
         addr = 0x500 + page*208 + sub_page_y*16 + sub_page_x
@@ -254,7 +249,7 @@ class SMB(object):
         y_start = 0
         mx, my = cls.get_mario_location_in_level(ram)
         my += 16
-        # Set mx to be within the screen offset
+        # 스크린 오프셋에 맞추어 mx 설정
         mx = ram[cls.RAMLocations.Player_X_Position_Screen_Offset.value]
 
         for y_pos in range(y_start, 240, 16):
@@ -267,7 +262,7 @@ class SMB(object):
                 sub_y = (y - 32) // 16                
                 addr = 0x500 + page*208 + sub_y*16 + sub_x
                 
-                # PPU is there, so no tile is there
+                # PPU가 존재하는 구역엔 타일이 없음 (게임 내 화면이지만 게임 내 세계의 일부는 아니기 때문에)
                 if row < 2:
                     tiles[loc] =  StaticTileType.Empty
                 else:
@@ -279,16 +274,16 @@ class SMB(object):
                     for enemy in enemies:
                         ex = enemy.location.x
                         ey = enemy.location.y + 8
-                        # Since we can only discriminate within 8 pixels, if it falls within this bound, count it as there
+                        # 우리가 분별할 수 있는 타일은 마리오 주위의 8개뿐 (에너미가 그 안에 들어와야 대처 가능)
                         if abs(x_pos - ex) <=8 and abs(y_pos - ey) <=8:
                             tiles[loc] = EnemyType.Generic_Enemy
-                # Next col
+                # 다음 행으로
                 col += 1
-            # Move to next row
+            # 다음 열로 
             col = 0
             row += 1
 
-        # Place marker for mario
+        # 맵 내에서 마리오의 위치 표기\
         mario_row, mario_col = cls.get_mario_row_col(ram)
         loc = (mario_row, mario_col)
         tiles[loc] = DynamicTileType.Mario
@@ -298,7 +293,7 @@ class SMB(object):
     @classmethod
     def get_mario_row_col(cls, ram):
         x, y = cls.get_mario_location_on_screen(ram)
-        # Adjust 16 for PPU
+        # PPU에 16비트 할당
         y = ram[cls.RAMLocations.Player_Y_Position_Screen_Offset.value] + 16
         x += 12
         col = x // 16
@@ -315,6 +310,7 @@ class SMB(object):
         if sub_y not in range(13):
             return StaticTileType.Empty.value
 
+        # 마리오가 딛을 수 있는 타일(바닥)
         addr = 0x500 + page*208 + sub_y*16 + sub_x
         if group_non_zero_tiles:
             if ram[addr] != 0:
