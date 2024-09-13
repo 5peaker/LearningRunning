@@ -16,7 +16,7 @@ With these codes, we expect to show you our efforts and skills.
 Codes in this repository needs the following environments for correct function.
 이 레포지토리 안의 코드들의 정상 동작을 위해선 다음과 같은 환경이 필요합니다. 
 
-##### Mario  
+#### Super Mario Brothers with AI
 * Python 3.8
 * gym==0.25.2
 * PyQt5==5.15.11
@@ -39,4 +39,4 @@ These codes containing below aspects:
 
 ## Citation
 
-WIP 
+WIP: 
