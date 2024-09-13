@@ -468,7 +468,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.max_fitness = 0.0
         self.env = retro.make(game='SuperMarioBros-Nes', state=f'Level{self.config.Misc.level}')
 
-        # 선택된 유형에 기초에 다음 세대의 사이즈를 책정한다
+        # 선택된 유형을 기초로 다음 세대의 사이즈를 책정한다
         self._next_gen_size = None
         if self.config.Selection.selection_type == 'plus':
             self._next_gen_size = self.config.Selection.num_parents + self.config.Selection.num_offspring
