@@ -6,7 +6,7 @@ from .individual import Individual
 
 
 def elitism_selection(population: Population, num_individuals: int) -> List[Individual]:
-    # Is this efficient? No. What would be better? Max heap. Will I change it? Probably not this time.
+    # 코멘트: Max Heap 사용하는 것이 더 효율적인 방법일 것. 
     individuals = sorted(population.individuals, key = lambda individual: individual.fitness, reverse=True)
     return individuals[:num_individuals]
 

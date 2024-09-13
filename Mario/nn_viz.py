@@ -21,9 +21,8 @@ class NeuralNetworkViz(QtWidgets.QWidget):
         self.tile_size = self.config.Graphics.tile_size
         self.neuron_radius = self.config.Graphics.neuron_radius
 
-        # Set all neuron locations for layer 0 (Input) to be at the same point.
-        # The reason I do this is because the number of inputs can easily become too many to show on the screen.
-        # For this reason it is easier to not explicitly show the input nodes and rather show the bounding box of the rectangle.
+        # 인풋 레이어에 있는 모든 뉴런의 위치를 동일한 지점으로 둔다.
+        # 인풋의 수가 스크린에 보이기엔 너무 많아질 수 있음: 모든 노드를 직접 보이지 않고 바운딩 박스를 마리오의 지각영역 삼아 보이는 게 효과적이라 판단함. 
         self.x_offset = 150 + 16//2*self.tile_size[0] + 5
         self.y_offset = 5 + 15*self.tile_size[1] + 5
         for nid in range(l[0]):
@@ -39,7 +38,7 @@ class NeuralNetworkViz(QtWidgets.QWidget):
         painter.setRenderHint(QtGui.QPainter.TextAntialiasing)
         painter.setRenderHint(QtGui.QPainter.SmoothPixmapTransform)
         painter.setPen(QPen(Qt.black, 1.0, Qt.SolidLine))
-        horizontal_space = 20  # Space between Nodes within the same layer
+        horizontal_space = 20  # 동일 레이어 노드 사이의 간격 설정
         
         layer_nodes = self.mario.network.layer_nodes
 
@@ -53,7 +52,7 @@ class NeuralNetworkViz(QtWidgets.QWidget):
         active_outputs = np.where(out > 0.5)[0]
         max_n = self.size[0] // (2* self.neuron_radius + horizontal_space)
         
-        # Draw nodes
+        # 노드 그리기
         for layer, num_nodes in enumerate(layer_nodes[1:], 1):
             h_offset = (((max_n - num_nodes)) * (2*self.neuron_radius + horizontal_space))/2
             activations = None
@@ -68,14 +67,14 @@ class NeuralNetworkViz(QtWidgets.QWidget):
                     self.neuron_locations[t] = (x_loc + self.neuron_radius, y_loc)
                 
                 painter.setBrush(QtGui.QBrush(Qt.white, Qt.NoBrush))
-                # Input layer
+                # 인풋 레이어
                 if layer == 0:
-                    # Is there a value being fed in
+                    # 학습되고 있는 값이 있다면
                     if inputs[node, 0] > 0:
                         painter.setBrush(QtGui.QBrush(Qt.green))
                     else:
                         painter.setBrush(QtGui.QBrush(Qt.white))
-                # Hidden layers
+                # 숨은 레이어 (화면 상에 드러내지 않는다)
                 elif layer > 0 and layer < len(layer_nodes) - 1:
                     saturation = max(min(activations[node, 0], 1.0), 0.0)
                     painter.setBrush(QtGui.QBrush(QtGui.QColor.fromHslF(125/239, saturation, 120/240)))
@@ -91,32 +90,31 @@ class NeuralNetworkViz(QtWidgets.QWidget):
                 painter.drawEllipse(x_loc, y_loc, self.neuron_radius*2, self.neuron_radius*2)
             v_offset += 150
 
-        # Reset horizontal offset for the weights
+        # 수평적 효과를 리셋
         h_offset = default_offset
 
-        # Draw weights
-        # For each layer starting at 1
+        # 가중치 그리기
+        # 각 레이어는 1부터 시작 
         for l in range(2, len(layer_nodes)):
             weights = self.mario.network.params['W' + str(l)]
             prev_nodes = weights.shape[1]
             curr_nodes = weights.shape[0]
-            # For each node from the previous layer
+            # 지난 레이어의 각 노드를 참조
             for prev_node in range(prev_nodes):
-                # For all current nodes, check to see what the weights are
+                # 현재의 각 노드에 매겨진 가중치 체크
                 for curr_node in range(curr_nodes):
-                    # If there is a positive weight, make the line blue
+                    # 현재 긍정적 영향을 주는 노드는 파란색으로 표시
                     if weights[curr_node, prev_node] > 0:
                         painter.setPen(QtGui.QPen(Qt.blue))
-                    # If there is a negative (impeding) weight, make the line red
+                    # 현재 부정적 영향을 주는 노드는 붉은색으로 표시
                     else:
                         painter.setPen(QtGui.QPen(Qt.red))
-                    # Grab locations of the nodes
+                    # 걱 노드 위치 체크
                     start = self.neuron_locations[(l-1, prev_node)]
                     end = self.neuron_locations[(l, curr_node)]
-                    # Offset start[0] by diameter of circle so that the line starts on the right of the circle
+                    # Offset 간의 연결 표시
                     painter.drawLine(start[0], start[1] + self.neuron_radius*2, end[0], end[1])
         
-        # Draw line straight down
         color = QColor(255, 0, 217)
         painter.setPen(QPen(color, 3.0, Qt.SolidLine))
         painter.setBrush(QBrush(Qt.NoBrush))
@@ -127,7 +125,7 @@ class NeuralNetworkViz(QtWidgets.QWidget):
         y_end = y_start + 5 + (2 * self.neuron_radius)
         painter.drawLine(x_start, y_start, x_end, y_end)
 
-        # Set pen to be smaller and draw pink connections
+        # 연결을 나타내는 선을 더 얇게 처리
         painter.setPen(QPen(color, 1.0, Qt.SolidLine))
         for nid in range(layer_nodes[1]):
             start = self.neuron_locations[(1, nid)]
